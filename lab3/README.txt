@@ -36,11 +36,11 @@ At the End: I kept the testing LEDS for the above components, while taking out t
 QUESTIONS
 
 What is the difference between a bit-wise and reduction logic operation?
-
+Bitwise operations work on only two bit patterns at once, while reduction logic operations groups two pair together in parrallels. So in bitwise if you are trying to be 1+5+3+4, you would have to do first 1+5=6 then 6+3=9 then 9+4=13 to get the result. But in reduction logic you can instead do (1+5) + (3+4) -> 6+7 = 13. 
 
 What operations did we implement?
-I implemented the AND, OR, and Invert operation.
+We implemented the AND, OR, and NOT(invert) bitwise operations, because our calculations were done bit by bit.
 
 Why might we want to use the other type of logic operations?
-<<insert your answer>>
+We would want to user reduction logic if we had 4+ groupings of operations. In this lab it is just ANDing 2 4bit numbers, but if we had 4 4bit numbers we were ANDing or adding then we would want to use reduction.
 
