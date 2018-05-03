@@ -2,8 +2,8 @@
 LAB 3: LOGIC UNIT WITH MEMORY
 CMPE 012 Spring 2018
 
-First Last, CruzID
-Section —, TA Name
+Scott Fischer, sifische
+Section 01F—, TA: Mike
 --------------------------------
 
 
@@ -12,10 +12,14 @@ LEARNING
 
 <<Describe what you learned, what was surprising, what worked well and what did not.>>
 
+I learned the overall design of a mux circuit, and the purpose of the circuit which is to choice a certain output/route in the circuit. So if there are 4 different possible outputs in the same circuit the mux allows you to choose 1 of these outputs. I also learned how to incorporate flip flops in order to make a register that stores bits of data. I also learned how to better approach circuit designs, and not necessarily look at it from a large picture at the start. Instead I found it better to break each piece down, make and test that peice. Then I would incorporate all peice together.
+
 ----------------
 ISSUES
 
 <<Discuss issues you had building the circuit.>>
+
+At first I had trouble understanding what I needed to accomplish, as in what the overall structure of the circuit would be. I knew that the mux needed to select the different operations, but I didn't know if how that would work in the basic idea of the design. At first I tried making it so that it would choose one operation and give all the bits, but that I figured out that wasn't the function of the mux. I instead had to break the lab piece by piece, and made the one bit mux and copy it. After I did the lab peice by piece it was much easier.
 
 ----------------
 DEBUGGING
@@ -32,10 +36,10 @@ At the End: I kept the testing LEDS for the above components, while taking out t
 QUESTIONS
 
 What is the difference between a bit-wise and reduction logic operation?
-<<insert your answer>>
+
 
 What operations did we implement?
-<<insert your answer>>
+I implemented the AND, OR, and Invert operation.
 
 Why might we want to use the other type of logic operations?
 <<insert your answer>>
