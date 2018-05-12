@@ -26,13 +26,6 @@ main:
 	start_loop:
 		move $t0,$s1
 		
-		#Prints Counter Integer		
-		#li $v0,1
-		#move $a0,$t0
-		#syscall
-		
-
-		
 		#---------This is IF BLOCK For Divisibility---------#	
 		start_divis3:
 			div $t0,$s1,$t3		#Divide by 3
@@ -49,9 +42,6 @@ main:
 			la $a0,Babe_MSG
 			syscall
 		
-			#li $v0,4
-			#la $a0,End_MSG
-			#syscall
 		
 			b Finish
 		
@@ -72,6 +62,7 @@ main:
 		
 			b Finish
 		
+		#Makes Sure New Line is Started#
 		Finish:
 			li $v0, 4
 			la $a0, End_MSG
@@ -90,7 +81,6 @@ main:
 			add $s1,$s1,$t1		#If not equal adds 1 to counter and jumps to start_loop
 			b start_loop		
 		
-	
 	end_loop:
 	li $v0,4
 	la $a0,message
