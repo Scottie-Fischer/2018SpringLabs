@@ -33,6 +33,16 @@ main:
 	la $a0, ($t2)
 	syscall
 	
+	#Testing For Adding Value With Offset
+	li $t3, 0		#$t3 holds offset amt (2)
+	addi $t3,$t3,1	#$t3 is now 3
+	addu $t4, $1,$t3	
+	lb $t5, ($t4)	#Loads the Byte of the offset address into $t5
+	
+	la $v0, 11		#11 is Print Char
+	la $a0, ($t5)	#Prints the value of $t5 (the value of offset address)
+	syscall
+	
 	#Exits cleanly
 	li $v0, 10
 	syscall
