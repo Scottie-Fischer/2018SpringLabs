@@ -1,11 +1,16 @@
+#Scott Fischer
+#sifische
+#CMPE12
+#lab 5
 .text
 main:
-	la $a1, 0x10010000
 
+	lw $a1, ($a1)			#Loads Stack Address from Program Argument
+	
 #-----Register Variables-----#
-	li $s3, 268435456
-	li $t0, 2			#Offset Counter for Address
-	addu $t1, $a1,$t0		#Holds Address of Current Char (3rd char) (Byte Address)
+	li $s3, 268435456			#Stores Dec Representation of Hex Digit 
+	li $t0, 2				#Offset Counter for Address
+	addu $t1, $a1,$t0			#Holds Address of Current Char (3rd char) (Byte Address)
 	lb $t3, ($t1)			#Holds Actual Value of Char
 	
 #-----Printing Prompt & Data-----#
@@ -19,45 +24,66 @@ main:
 	la $a0, New_Line
 	syscall
 	
-	li $v0,11
-	la $a0,($t3)
-	syscall
+	#li $v0,11
+	#la $a0,($t3)
+	#syscall
 
-#----------IF Block----------#	#Determines if char is Digit or Letter
-	Start:
+#----------Loop----------#	#Determines if char is Digit or Letter
+	Loop_start:
 	bgt $t3,0x40,Letter
 	#Digit:	
 	subi $t6,$t3,0x30			#If Digit subtracts 48
-	b Multi
+	b Multiply
 	
 	Letter:
 	subi $t6,$t3,0x37			#If Letter subtracts 55
-	b Multi
+	b Multiply
 	
-	Multi:
+	#Multiplies Number by Hex Digit Value (i.e if 2nd to last value then mutliplies by 16)
+	Multiply:
 	multu $t6,$s3
 	mflo $t7
 	addu $s0, $s0, $t7
 	b Split
 	
 	Split:
-	beq $t0,9,End
+	beq $t0,9,To_ASCII		#If at end of String then end
+	
 	#Update Hex Number We Multiply By
 	divu $s3,$s3,16
-	#Updates Bit We Look At
+	
+	#Updates Hex Bit We Look At
 	addi $t0,$t0,1
 	addu $t1, $a1,$t0
 	lb $t3, ($t1)
-	b Start
+	b Loop_start
+	
+	To_ASCII:
+	#If Block to Determine if Negative or Postive
+	li $t0, 0				#Reassigns $t0 to be for array offset(index) holder
+	sll $t5, $t7,31
+	bgtz  $t5,Positive		#Skips adding '-' char to array if positive
+	li $t2,0x2D
+	sb $t2,myArray($t0)
+	lb $t4,myArray($zero)
+	
+	Positive:				#Skips adding '-' char to array
+	b End
 	
 	End:
+		#Prints Integer
+		li $v0, 1
+		la $a0, ($s0)
+		syscall
+		li $v0,11
+		la $a0,($t4)
+		syscall
 		li $v0,10
 		syscall
 
 .data
-String_Data:
-.asciiz "0xDEADBEEF"
 Prompt:
 .asciiz "Input a hex number:\n"
 New_Line:
 .asciiz "\n"
+myArray: .space 20
