@@ -61,13 +61,18 @@ main:
 	To_ASCII:
 	#If Block to Determine if Negative or Postive
 	li $t0, 0				#Reassigns $t0 to be for array offset(index) holder
+	andi $t7,$s0,0x80000000
 	sll $t5, $t7,31
-	bgtz  $t5,Positive		#Skips adding '-' char to array if positive
+	blez $t5,Positive		#Skips adding '-' char to array if positive
+	
 	li $t2,0x2D
 	sb $t2,myArray($t0)
 	lb $t4,myArray($zero)
 	
 	Positive:				#Skips adding '-' char to array
+	#-----Loop for Numbers----#
+	
+	
 	b End
 	
 	End:
