@@ -4,9 +4,7 @@
 #lab 5
 .text
 main:
-
 	lw $a1, ($a1)			#Loads Stack Address from Program Argument
-	
 #-----Register Variables-----#
 	li $s3, 268435456			#Stores Dec Representation of Hex Digit 
 	li $t0, 2				#Offset Counter for Address
@@ -23,10 +21,6 @@ main:
 	li $v0,4
 	la $a0, New_Line
 	syscall
-	
-	#li $v0,11
-	#la $a0,($t3)
-	#syscall
 
 #----------Loop----------#	#Determines if char is Digit or Letter
 	Loop_start:
@@ -56,7 +50,7 @@ main:
 	addi $t0,$t0,1
 	addu $t1, $a1,$t0
 	lb $t3, ($t1)
-	b Loop_start
+	b Loop_start			#Restarts Loop
 	
 	To_ASCII:
 	#If Block to Determine if Negative or Postive
@@ -70,7 +64,17 @@ main:
 	lb $t4,myArray($zero)
 	
 	Positive:				#Skips adding '-' char to array
-	#-----Loop for Numbers----#
+	li $t7, 0				#Repurposing $t7
+	add $t7,$t7,$s0
+	xori $t7,$t7, 0xFFFFFFFF
+	addi $t7,$t7,1
+	#-----Loop for Numbers----# (Eventually)
+	addi $t0,$t0,4 
+	li $t5,0x10000000
+	andi $t6,$t7,0xF0000000
+	div $t6,$t6, $t5 
+	addi $t6,$t6,48
+	sb $t6,myArray($t0)
 	
 	
 	b End
@@ -80,12 +84,14 @@ main:
 		li $v0, 1
 		la $a0, ($s0)
 		syscall
+		li $v0,4
+		la $a0,New_Line
+		syscall
 		li $v0,11
 		la $a0,($t4)
 		syscall
 		li $v0,10
 		syscall
-
 .data
 Prompt:
 .asciiz "Input a hex number:\n"
