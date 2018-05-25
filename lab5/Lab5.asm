@@ -61,9 +61,9 @@ main:
 	To_ASCII:
 	#If Block to Determine if Negative or Postive
 	li $t0, 0				#Reassigns $t0 to be for array offset(index) holder
-	andi $t7,$s0,0x80000000
-	sll $t5, $t7,31
-	blez $t5,Positive		#Skips adding '-' char to array if positive
+	andi $t7,$s0,0x80000000		#Repurposes $t7 to hold the first bit of binary number
+	srl $t7, $t7,31			
+	blt $t7,1,Positive		#Skips adding '-' char to array if positive
 	
 	li $t2,0x2D
 	sb $t2,myArray($t0)
