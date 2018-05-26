@@ -105,13 +105,17 @@ main:
 	b pos					#Continues Back to Process
 #-----Start of Printing Process-----#
 	End:
+	li $v0,4
+	la $a0,finishPrompt
+	syscall
+	printArray:
 	bltz $t0,Close
 	lb $t4,myArray($t0)
 	li $v0,11
 	la $a0,($t4)
 	syscall
 	subiu $t0,$t0,1
-	b End
+	b printArray
 	Close:
 	li $v0,10
 	syscall
@@ -120,4 +124,6 @@ Prompt:
 .asciiz "Input a hex number:\n"
 New_Line:
 .asciiz "\n"
+finishPrompt:
+.asciiz "The decimal value is:\n"
 myArray: .space 32
