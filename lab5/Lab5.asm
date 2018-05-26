@@ -2,6 +2,28 @@
 #sifische
 #CMPE12
 #lab 5
+#----------Peudocode Outline----------#
+	#Read Input from Register
+	#Convert Argument into Binary Integer
+	#Store Binary Integer into $s0
+	
+	#Convert $s0 into ASCII decimal number:
+		#Loop Start: Loop 8 times (for each hex digit)
+			#Pass Through first two chars ("0x")
+			#If Block that sets starting binary based on if digit or letter
+				#Multiples Number by 16^power of Digit Place
+			#Sets value to be added if letter
+				#Add 55 if Letter
+			#Sets value to be added if digit
+				#Add 48 if Digit
+		#Turn Hex Into Binary Version of Dec Number Using 2SC
+			#Only if Positive
+		#Once In Binary Loop For Every Digit in Dec Number
+			#Divide by 10 to get Digit and Add 48
+			#Store This ASCII value to Array
+		#Print Loop For Array
+	#Close Program
+#----------End of Outline----------#
 .text
 main:
 	lw $a1, ($a1)			#Loads Stack Address from Program Argument
@@ -30,7 +52,6 @@ main:
 	Letter:
 	subi $t6,$t3,0x37			#If Letter subtracts 55
 	b Multiply
-	
 	#Multiplies Number by Hex Digit Value (i.e if 2nd to last value then mutliplies by 16)
 	Multiply:
 	multu $t6,$s3
