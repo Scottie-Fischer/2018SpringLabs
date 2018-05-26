@@ -71,6 +71,7 @@ main:
 #-----End Of ASCII LOOP----#
 #-----Start of Turning Binary to ASCII-----#
 	To_Dec:
+	beqz $s0,hardZero			#If Program Argument is Zero
 	li $t0, 0				#Counter for How Many Decimal Digits
 	#Sets $t7 to binary version of decimal number by converting to 2SC
 	move $t7,$s0
@@ -82,7 +83,7 @@ main:
 	beqz $t7,addSign			#Branches if no more Digits
 	rem $t6,$t7,10
 	mflo $t7
-	bltz $t6,hardCode
+	bltz $t6,hardCode			#If Program Argument is 0x80000000 (Avoiding Arithemtic Overflow)
 	pos:
 	addi $t6,$t6,48
 	sb $t6,myArray($t0)
@@ -103,6 +104,11 @@ main:
 	mult $t6,$t5
 	mflo $t6
 	b pos					#Continues Back to Process
+	hardZero:
+	li $t7, 48
+	move $t0,$zero
+	sb $t7, myArray($zero)
+	b End
 #-----Start of Printing Process-----#
 	End:
 	li $v0,4
