@@ -53,8 +53,7 @@ main:
 	b Loop_start			#Restarts Loop
 	
 	To_ASCII:
-	#If Block to Determine if Negative or Postive
-	li $t0, 0				#Reassigns $t0 to be for array offset(index) holder
+	li $t0, 0				#Counter for How Many Decimal Digits
 	andi $t7,$s0,0x80000000		#Repurposes $t7 to hold the first bit of binary number
 	srl $t7, $t7,31			
 	blt $t7,1,Positive		#Skips adding '-' char to array if positive
@@ -62,22 +61,22 @@ main:
 	li $t2,0x2D
 	sb $t2,myArray($t0)
 	lb $t4,myArray($zero)
+	addiu $t0,$t0,1
 	
-	Positive:				#Skips adding '-' char to array
-	li $t7, 0				#Repurposing $t7
-	add $t7,$t7,$s0
-	xori $t7,$t7, 0xFFFFFFFF
+	#Sets $t7 to binary version of decimal number by converting to 2SC
+	Positive:
+	move $t7,$s0
+	xori $t7,$t7 0xFFFFFFFF
 	addi $t7,$t7,1
-	#-----Loop for Numbers----# (Eventually)
-	addi $t0,$t0,4 
-	li $t5,0x10000000
-	andi $t6,$t7,0xF0000000
-	div $t6,$t6, $t5 
+	
+	bin2Dec:				#Loop converts binary $t7 to decimal number
+	beqz $t7,End			#Branches if no more Digits
+	rem $t6,$t7,10
+	mflo $t7
 	addi $t6,$t6,48
 	sb $t6,myArray($t0)
-	
-	
-	b End
+	addi $t0,$t0,1
+	b bin2Dec
 	
 	End:
 		#Prints Integer
@@ -87,9 +86,17 @@ main:
 		li $v0,4
 		la $a0,New_Line
 		syscall
+		
+		PrintArray:
+		bltz $t0,Close
+		lb $t4,myArray($t0)
 		li $v0,11
 		la $a0,($t4)
 		syscall
+		subiu $t0,$t0,1
+		b PrintArray
+		
+		Close:
 		li $v0,10
 		syscall
 .data
@@ -97,4 +104,4 @@ Prompt:
 .asciiz "Input a hex number:\n"
 New_Line:
 .asciiz "\n"
-myArray: .space 20
+myArray: .space 32
