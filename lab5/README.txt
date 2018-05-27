@@ -30,4 +30,4 @@ The smallest supported value is -2147483648 which is 0x80000000 in hex.
 I mostly used unsiged arthmetic which gave me the advantage of just typing a hex number when I was using addition of an integer. I also used it because when I manually loaded an integer into a register I almost never needed it to be negative so it allowed me to never worry about that.
 
 5.
-<<Insert your answer>>
+In order to turn a String of binary I would first convert the string into the binary number by interating over each digit and subtracting 48 or 0x30. Then I would multiply it by a power of 2, depening on which digit it is. After that I would store the total in a register and divide by 10 until I can't anymore. This would get the decimal version of a certain digit, then you add 48 back to the digit to get the ASCII representation.
