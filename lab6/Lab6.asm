@@ -32,7 +32,7 @@ main:
 	
 	li $v0,10
 	syscall
-
+#------------------------------------------------------------------------------------
 .text
 PrintFloat:
 
@@ -52,7 +52,7 @@ PrintFloat:
 	sw $s6,40($sp)
 	sw $s7,44($sp)
 	
-	#-----Printing Sign-----#
+	#Printing Sign
 	li $v0,4
 	la $a0,Sign_Msg
 	syscall
@@ -66,7 +66,7 @@ PrintFloat:
 	li $v0,4
 	la $a0,PNL
 	syscall
-	
+	#Printing Exponent
 	li $v0,4
 	la $a0,Exponent_Msg
 	syscall
@@ -152,15 +152,36 @@ CompareFloats:
 	sw $s6,40($sp)
 	sw $s7,44($sp)
 #-----Comparing Floats-----#
-	bgt $a1,$a0,Greater
-	beq $a1,$a0,Equal
-	li $v0,1
+	#Finding The Signs of Both Floats
+	andi $t0,$a0,0x80000000
+	srl $t0,$t0,31
+	andi $t1,$a1,0x80000000
+	srl $t1,$t1,31
+	#Comparing Signs
+	bgt $t0,$t1,Greater
+	blt $t0,$t1,Lesser
+	#Signs Are Equal, so Get Exponents
+	andi $t0,$a0,0x7F800000
+	srl $t0,$t0,23
+	andi $t1,$a1,0x7F800000
+	srl $t1,$t1,23
+	#Comparing
+	bgt $t0,$t1,Greater
+	blt $t0,$t1,Lesser
+	#Exp are Equal, so Get Mantissa
+	andi $t0,$a0,0x007FFFFF
+	andi $t1,$a1,0x007FFFFF
+	#Comparing
+	bgt $t0,$t1,Greater
+	blt $t0,$t1,Lesser
+	li $v0,0
 	b RestoreRegisters
 	Greater:
+		li $v0,1
+		b RestoreRegisters
+	Lesser:
 		li $v0,-1
 		b RestoreRegisters
-	Equal:
-		li $v0,0
 #-----Restoring Registers-----#
 	RestoreRegisters:
 		lw $a0,0($sp)
@@ -176,4 +197,5 @@ CompareFloats:
 		lw $s6,40($sp)
 		lw $s7,44($sp)
 		addi $sp,$sp,48
-	jr $ra
+#-----Close Out Function-----#
+	jr $ra			
