@@ -199,3 +199,74 @@ CompareFloats:
 		addi $sp,$sp,48
 #-----Close Out Function-----#
 	jr $ra			
+	
+#----------Normalize Float Subroutine---------#
+#Subroutine: 	NormalizeFloat
+#Purpose:		Normalizes, rounds, and "packs" a floating point value
+#input:		$a0 = 1-bit  Sign bit (right aligned)
+#			$a1 = [63:32] of Mantissa
+#			$a2 = [31:0] of Mantissa
+#			$a3 = 8 bit Biased Exponent (right aligned)
+#output:		$v0 = Normalized FP result of $a0,$a1,$a2
+#Side Effects:	None
+.text
+NormalizeFloats:
+#-----Saving Registers-----#
+	subi $sp,$sp,48
+	sw $a0,0($sp)
+	sw $a1,4($sp)
+	sw $a2,8($sp)
+	sw $a3,12($sp)
+	sw $s0,16($sp)
+	sw $s1,20($sp)
+	sw $s2,24($sp)
+	sw $s3,28($sp)
+	sw $s4,32($sp)
+	sw $s5,36($sp)
+	sw $s6,40($sp)
+	sw $s7,44($sp)
+#-----Normalizing-----#
+	move $t0, $a0
+	move $t1, $a1
+	move $t2, $a2
+	move $t3, $a3
+	
+	li $t7,17					#Counter For Decimal Point Shifts
+	ShiftA1:
+		sll $t1,$t1,1			
+		subi $t7,$t7,1			#Counts How Many Decimal Point Shifts are Going to Be Done
+		andi $t6,$t1,0x80000000		#Mask to Find The 1's Place of $t1
+		beqz $t6,ShiftA1			#Restarts Loop If Right Most 1 is not in 1's Place
+	
+	add $t3,$t3,$t7				#Adding How Many Decimal Point Shifts Were Done
+	#Combine $a1 and $a2
+	addi $t7,$t7,15
+	srlv $t2,$t2,$t7				#Aligns $a2
+	
+	or $t1,$t1,$t2				#combines $a1 & $a2
+	sll $t1,$t1,1				#Shift the 1's place out of Mantissa
+	srl $t1,$t1,9				#Aligns $t1 (Mantissa)
+	
+	sll $t0,$t0,31				#Aligns $t0 (Sign)
+	sll $t3,$t3,23				#Aligns $t3 (Exponent)
+	
+	or $v0,$v0,$t0				#Combining Sign into $v0
+	or $v0,$t0,$t3				#Combining Exponent into $v0
+	or $v0,$t0,$t1				#Combining Mantissa into $v0
+#-----Restoring Registers-----#
+	RestoreRegisters:
+		lw $a0,0($sp)
+		lw $a1,4($sp)
+		lw $a2,8($sp)
+		lw $a3,12($sp)
+		lw $s0,16($sp)
+		lw $s1,20($sp)
+		lw $s2,24($sp)
+		lw $s3,28($sp)
+		lw $s4,32($sp)
+		lw $s5,36($sp)
+		lw $s6,40($sp)
+		lw $s7,44($sp)
+		addi $sp,$sp,48
+#-----Close Out Function-----#
+	jr $ra
