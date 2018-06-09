@@ -8,28 +8,9 @@
 #Side Effects:	None
 .text
 main:
-	li $a0,0x44800000
-	li $a1,0x3F000000
-	jal CompareFloats
-	move $t1,$v0
-	li $v0,1
-	la $a0,($t1)
-	syscall
-	li $a0,0x44800000
-	li $a1,0x44800000
-	jal CompareFloats
-	move $t1,$v0
-	li $v0,1
-	la $a0,($t1)
-	syscall
-	li $a0,0x3F000000
-	li $a1,0x44800000
-	jal CompareFloats
-	move $t1,$v0
-	li $v0,1
-	la $a0,($t1)
-	syscall
-	
+	li $a0,0x3C0BBBBB
+	li $a1,0x3C111111
+	jal AddFloats
 	li $v0,10
 	syscall
 #------------------------------------------------------------------------------------
@@ -175,15 +156,15 @@ CompareFloats:
 	bgt $t0,$t1,Greater
 	blt $t0,$t1,Lesser
 	li $v0,0
-	b RestoreRegisters
+	b RestoreRegisters2
 	Greater:
 		li $v0,1
-		b RestoreRegisters
+		b RestoreRegisters2
 	Lesser:
 		li $v0,-1
-		b RestoreRegisters
+		b RestoreRegisters2
 #-----Restoring Registers-----#
-	RestoreRegisters:
+	RestoreRegisters2:
 		lw $a0,0($sp)
 		lw $a1,4($sp)
 		lw $a2,8($sp)
@@ -210,9 +191,14 @@ CompareFloats:
 #output:		$v0 = Normalized FP result of $a0,$a1,$a2
 #Side Effects:	None
 .text
-NormalizeFloats:
+NormalizeFloat:
+li $v0,0
+li $t4,0
+li $t5,0
+li $t6,0
+li $t7,0
 #-----Saving Registers-----#
-	subi $sp,$sp,48
+	subi $sp,$sp,52
 	sw $a0,0($sp)
 	sw $a1,4($sp)
 	sw $a2,8($sp)
@@ -225,6 +211,7 @@ NormalizeFloats:
 	sw $s5,36($sp)
 	sw $s6,40($sp)
 	sw $s7,44($sp)
+	sw $ra,48($sp)
 #-----Normalizing-----#
 	move $t0, $a0
 	move $t1, $a1
@@ -251,10 +238,11 @@ NormalizeFloats:
 	sll $t3,$t3,23				#Aligns $t3 (Exponent)
 	
 	or $v0,$v0,$t0				#Combining Sign into $v0
-	or $v0,$t0,$t3				#Combining Exponent into $v0
-	or $v0,$t0,$t1				#Combining Mantissa into $v0
+	or $v0,$v0,$t3				#Combining Exponent into $v0
+	or $v0,$v0,$t1				#Combining Mantissa into $v0
+	
 #-----Restoring Registers-----#
-	RestoreRegisters:
+	RestoreRegisters5:
 		lw $a0,0($sp)
 		lw $a1,4($sp)
 		lw $a2,8($sp)
@@ -267,6 +255,127 @@ NormalizeFloats:
 		lw $s5,36($sp)
 		lw $s6,40($sp)
 		lw $s7,44($sp)
-		addi $sp,$sp,48
+		lw $ra,48($sp)
+		addi $sp,$sp,52
+#-----Close Out Function-----#
+	jr $ra
+#----------AddFloats Subroutine----------#
+#Subroutine: 	AddFloats
+#Purpose:		Adds Together two floating point values A & B
+#input:		$a0 = Single Point Precision float A
+#			$a1 = Single Point Precision float B
+#output:		$v0 = Addition of A+B
+#Side Effects:	None
+.text
+AddFloats:
+li $t0,0
+li $t1,0
+li $t2,0
+li $t3,0
+li $t4,0
+li $t5,0
+li $t6,0
+li $t7,0
+#-----Saving Registers-----#
+	subi $sp,$sp,52
+	sw $a0,0($sp)
+	sw $a1,4($sp)
+	sw $a2,8($sp)
+	sw $a3,12($sp)
+	sw $s0,16($sp)
+	sw $s1,20($sp)
+	sw $s2,24($sp)
+	sw $s3,28($sp)
+	sw $s4,32($sp)
+	sw $s5,36($sp)
+	sw $s6,40($sp)
+	sw $s7,44($sp)
+	sw $ra,48($sp)
+#---------------------------#
+#move $s0,$a0
+#move $s1,$a1
+
+#Step 1: Scale Numbers
+	#Check Exponents if Equal Then Branch
+	#If Not Equal then figure out which one is bigger
+		#Then Do Loop to Get Correct Exponent
+#Step2: Add Mantissa
+	#Check if adding pos/neg values
+	
+andi $t0,$a0,0x7F800000			#Gets Exponent of A
+andi $t1,$a1,0x7F800000			#Gets Exponent of B
+srl $t0,$t0,23
+srl $t1,$t1,23
+
+andi $t2,$a0,0x007FFFFF			#Gets Mantissa of A
+andi $t3,$a1,0x007FFFFF			#Gets Mantissa of B
+addi $t2,$t2,0x00800000			#Adding Hidden Bit
+addi $t3,$t3,0x00800000			#Adding Hidden Bit
+
+andi $t4,$a0,0x80000000			#Get Sign of A
+andi $t5,$a1,0x80000000			#Get Sign of B
+
+beq $t0,$t1,Equal
+bgt $t0,$t1,ShiftB
+ShiftA:					#Shifting A b/c B's exponent is greater
+	srl $t2,$t2,1			#Shift Mantissa of A
+	addi $t0,$t0,1			#Add to Exponent of A
+	bne $t1,$t0,ShiftA		#Restart loop if needs more shifting
+	b Equal
+ShiftB:					#Shifting B b/c A's exponent is greater
+	srl $t3,$t3,1			#Shift Mantissa of B
+	addi $t1,$t1,1			#Add to Exponent of B
+	bne $t1,$t0,ShiftB		#Restart loop if needs more shifting
+Equal:
+	#Step 2 Add Mantissa of A & B
+	bne $t4,$t5,PosNeg
+	add $t7,$t2,$t3
+	b Alignment
+	
+	PosNeg:
+	
+	#Step 3 Normalize
+	Alignment:				#Alignement Substep
+	andi $t6,$t7,0x1000000		
+	beqz $t6, Shift			#Branch if not 10.yyyy
+	andi $t6,$t7,0x1			#Taking the 24th Bit and Storing into $t6
+	sll $t6,$t6,22			#Shifting 24th bit into Alignment
+	srl $t7,$t7,1			#Aligning The Decimal Point
+	addi $t0,$t0,1			#Adding to Exponent
+	
+	#Need to take bits off $t7 so that only 01.yy_yyyy_yyyy_yyyyy
+	#Add bits to another register
+	Shift:
+	andi $t5,$t7,0x1FF
+	sll $t5,$t5,23
+	add $t6,$t6,$t5			#Combining last 10 bits
+	srl $t7,$t7,9			#Shifting for Normalizing Format
+	
+	Normalize:
+	
+	move $a0,$t4
+	move $a1,$t7
+	move $a2,$t6
+	move $a3,$t0
+	
+	jal NormalizeFloat
+	move $t7,$v0
+	
+#-----Restoring Registers-----#
+	RestoreRegisters4:
+		lw $a0,0($sp)
+		lw $a1,4($sp)
+		lw $a2,8($sp)
+		lw $a3,12($sp)
+		lw $s0,16($sp)
+		lw $s1,20($sp)
+		lw $s2,24($sp)
+		lw $s3,28($sp)
+		lw $s4,32($sp)
+		lw $s5,36($sp)
+		lw $s6,40($sp)
+		lw $s7,44($sp)
+		lw $ra,48($sp)
+		addi $sp,$sp,52
 #-----Close Out Function-----#
 	jr $ra
