@@ -2,18 +2,19 @@
 #sifische
 #lab6
 
+.text
+main:
+	li $a0,0x40a1999a
+	li $a1,0xc0880000
+	jal AddFloats
+	move $t7,$v0
+	li $v0,10
+	syscall
+#------------------------------------------------------------------------------------
 #Subroutine: 	PrintFloat
 #Purpose:		Prints the sign, mantissa, and exponent of a SP FP value
 #input:		$a0 = Single Precision float
 #Side Effects:	None
-.text
-main:
-	li $a0,0x3C0BBBBB
-	li $a1,0x3C111111
-	jal AddFloats
-	li $v0,10
-	syscall
-#------------------------------------------------------------------------------------
 .text
 PrintFloat:
 
@@ -223,14 +224,17 @@ li $t7,0
 		sll $t1,$t1,1			
 		subi $t7,$t7,1			#Counts How Many Decimal Point Shifts are Going to Be Done
 		andi $t6,$t1,0x80000000		#Mask to Find The 1's Place of $t1
+		beqz $a2,Zero
+		Continue:
 		beqz $t6,ShiftA1			#Restarts Loop If Right Most 1 is not in 1's Place
-	
-	add $t3,$t3,$t7				#Adding How Many Decimal Point Shifts Were Done
+		
+	#add $t3,$t3,$t7				#Adding How Many Decimal Point Shifts Were Done	
 	#Combine $a1 and $a2
 	addi $t7,$t7,15
 	srlv $t2,$t2,$t7				#Aligns $a2
 	
 	or $t1,$t1,$t2				#combines $a1 & $a2
+	
 	sll $t1,$t1,1				#Shift the 1's place out of Mantissa
 	srl $t1,$t1,9				#Aligns $t1 (Mantissa)
 	
@@ -240,7 +244,10 @@ li $t7,0
 	or $v0,$v0,$t0				#Combining Sign into $v0
 	or $v0,$v0,$t3				#Combining Exponent into $v0
 	or $v0,$v0,$t1				#Combining Mantissa into $v0
-	
+	b RestoreRegisters5
+	Zero:						#Hard Code for Zero Addition
+		bnez $a1,Continue
+		li $v0,0x00
 #-----Restoring Registers-----#
 	RestoreRegisters5:
 		lw $a0,0($sp)
@@ -292,15 +299,19 @@ li $t7,0
 	sw $s7,44($sp)
 	sw $ra,48($sp)
 #---------------------------#
-#move $s0,$a0
-#move $s1,$a1
-
+#Psuedo Code Outline
 #Step 1: Scale Numbers
 	#Check Exponents if Equal Then Branch
 	#If Not Equal then figure out which one is bigger
 		#Then Do Loop to Get Correct Exponent
 #Step2: Add Mantissa
 	#Check if adding pos/neg values
+		#If Pos/Neg Check if Neg is Bigger
+		#If so then flip and subtract	
+	#If Both Pos then just add
+#Step 3 Normalize
+	#Shift Bits into correct Normalize Format
+	#Call NormalizeFloat
 	
 andi $t0,$a0,0x7F800000			#Gets Exponent of A
 andi $t1,$a1,0x7F800000			#Gets Exponent of B
@@ -330,12 +341,30 @@ Equal:
 	#Step 2 Add Mantissa of A & B
 	bne $t4,$t5,PosNeg
 	add $t7,$t2,$t3
+
 	b Alignment
 	
 	PosNeg:
+	#Substep of Checking if Neg is Bigger
+	bnez $t5,checkSizeofNeg		#B is the Negative
 	
+	#Else Swap Matnissas of A & B and Signs
+	move $t6,$t0
+	move $t0,$t1
+	move $t1,$t6
+	move $t6,$t2
+	move $t2,$t3
+	move $t3,$t6
+	checkSizeofNeg:
+	bgt $t2,$t3,Subtract
+	li $t4,0x80000000			#Negative is bigger so Sign is Negative
+	Subtract:
+	sub $t7,$t2,$t3			#Subtracting Mantissa
 	#Step 3 Normalize
 	Alignment:				#Alignement Substep
+	li $t6,0x00				#Clearing $t6
+	andi $t6,$t7,0xFF800000		#Checking if 00.yyyy
+	beqz $t6,FractShift
 	andi $t6,$t7,0x1000000		
 	beqz $t6, Shift			#Branch if not 10.yyyy
 	andi $t6,$t7,0x1			#Taking the 24th Bit and Storing into $t6
@@ -343,24 +372,25 @@ Equal:
 	srl $t7,$t7,1			#Aligning The Decimal Point
 	addi $t0,$t0,1			#Adding to Exponent
 	
-	#Need to take bits off $t7 so that only 01.yy_yyyy_yyyy_yyyyy
-	#Add bits to another register
-	Shift:
+	Shift:				#Shifting into Normalizing Format
 	andi $t5,$t7,0x1FF
 	sll $t5,$t5,23
 	add $t6,$t6,$t5			#Combining last 10 bits
 	srl $t7,$t7,9			#Shifting for Normalizing Format
-	
+	b Normalize
+	FractShift:			
+		sll $t7,$t7,1
+		subi $t0,$t0,1
+		andi $t6,$t7,0x800000
+		beqz $t6,FractShift
 	Normalize:
-	
 	move $a0,$t4
 	move $a1,$t7
 	move $a2,$t6
 	move $a3,$t0
-	
 	jal NormalizeFloat
 	move $t7,$v0
-	
+
 #-----Restoring Registers-----#
 	RestoreRegisters4:
 		lw $a0,0($sp)
@@ -379,3 +409,5 @@ Equal:
 		addi $sp,$sp,52
 #-----Close Out Function-----#
 	jr $ra
+.data
+Pos_Neg:	.asciiz "Adding Pos Neg Floats\n"
