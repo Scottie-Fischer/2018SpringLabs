@@ -4,9 +4,9 @@
 
 .text
 main:
-	li $a0,0x40a1999a
-	li $a1,0xc0880000
-	jal AddFloats
+	li $a0,0x3f200000
+	li $a1,0x40a00000
+	jal MultFloats
 	move $t7,$v0
 	li $v0,10
 	syscall
@@ -17,7 +17,6 @@ main:
 #Side Effects:	None
 .text
 PrintFloat:
-
 	move $t7,$a0
 	#-----Saving Registers-----#
 	subi $sp,$sp,48
@@ -228,7 +227,7 @@ li $t7,0
 		Continue:
 		beqz $t6,ShiftA1			#Restarts Loop If Right Most 1 is not in 1's Place
 		
-	#add $t3,$t3,$t7				#Adding How Many Decimal Point Shifts Were Done	
+	add $t3,$t3,$t7				#Adding How Many Decimal Point Shifts Were Done	
 	#Combine $a1 and $a2
 	addi $t7,$t7,15
 	srlv $t2,$t2,$t7				#Aligns $a2
@@ -341,13 +340,10 @@ Equal:
 	#Step 2 Add Mantissa of A & B
 	bne $t4,$t5,PosNeg
 	add $t7,$t2,$t3
-
 	b Alignment
-	
 	PosNeg:
 	#Substep of Checking if Neg is Bigger
 	bnez $t5,checkSizeofNeg		#B is the Negative
-	
 	#Else Swap Matnissas of A & B and Signs
 	move $t6,$t0
 	move $t0,$t1
@@ -409,5 +405,99 @@ Equal:
 		addi $sp,$sp,52
 #-----Close Out Function-----#
 	jr $ra
-.data
-Pos_Neg:	.asciiz "Adding Pos Neg Floats\n"
+
+#Subroutine: 	MultFloats
+#Purpose:		Multiplies two floating point values A & B
+#input:		$a0 = Single Point Precision float A
+#			$a1 = Single Point Precision float B
+#output:		$v0 = Product of A*B
+#Side Effects:	None
+.text
+MultFloats:
+#-----Outline-----#
+#Step 1 Add Exponents
+#-Masking both $a0 & $a1 to get exponents
+#-Add Them
+#-Subtract 127
+#Step 2 Multiply Mantissa
+#-Add Hidden Bit to Both Mantissas
+#-Multiply Mantissas
+#Normalize
+#-Align in Normalize Format
+#-Call NormalizeFloats
+#-----Saving Registers-----#
+	subi $sp,$sp,52
+	sw $a0,0($sp)
+	sw $a1,4($sp)
+	sw $a2,8($sp)
+	sw $a3,12($sp)
+	sw $s0,16($sp)
+	sw $s1,20($sp)
+	sw $s2,24($sp)
+	sw $s3,28($sp)
+	sw $s4,32($sp)
+	sw $s5,36($sp)
+	sw $s6,40($sp)
+	sw $s7,44($sp)
+	sw $ra,48($sp)
+#---------------------------#
+li $t2,0
+li $t3,0
+li $t4,0
+li $t5,0
+li $t6,0
+li $t7,0
+
+andi $t0,$a0,0x7F800000
+srl $t0,$t0,23
+andi $t1,$a1,0x7F800000
+srl $t1,$t1,23
+add $t0,$t0,$t1
+subi $t0,$t0,127
+sll $t0,$t0,23
+
+
+andi $t2,$a0,0x80000000
+andi $t3,$a1,0x80000000
+add $t1,$t2,$t3
+add $t0,$t0,$t1
+move $v0,$t0
+
+andi $t2,$a0,0x7FFFFF
+addi $t2,$t2,0x800000
+andi $t3,$a1,0x7FFFFF
+addi $t3,$t3,0x800000
+mult $t2,$t3
+mfhi $t2				#Stores lower 32 bits of mantissa in $t2
+mflo $t3				#Stores upper 32 bits of mantissa in $t2
+
+#Shifting Mantissa into Normalization Format
+sll $t2,$t2,8	
+andi $t4,$t3,0xFF000000
+srl $t4,$t4,24
+
+add $t2,$t2,$t4			#Combining 23bits of Mantissa
+
+add $t0,$t2,$t0			#Combining Mantissa and Exp and Sign
+move $v0,$t0
+
+
+
+#-----Restoring Registers-----#
+		lw $a0,0($sp)
+		lw $a1,4($sp)
+		lw $a2,8($sp)
+		lw $a3,12($sp)
+		lw $s0,16($sp)
+		lw $s1,20($sp)
+		lw $s2,24($sp)
+		lw $s3,28($sp)
+		lw $s4,32($sp)
+		lw $s5,36($sp)
+		lw $s6,40($sp)
+		lw $s7,44($sp)
+		lw $ra,48($sp)
+		addi $sp,$sp,52
+#-----Close Out Function-----#
+#-----Close Out Function-----#
+	jr $ra
