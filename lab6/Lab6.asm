@@ -2,14 +2,6 @@
 #sifische
 #lab6
 
-.text
-main:
-	li $a0,0x3f200000
-	li $a1,0x40a00000
-	jal MultFloats
-	move $t7,$v0
-	li $v0,10
-	syscall
 #------------------------------------------------------------------------------------
 #Subroutine: 	PrintFloat
 #Purpose:		Prints the sign, mantissa, and exponent of a SP FP value
@@ -138,9 +130,10 @@ CompareFloats:
 	srl $t0,$t0,31
 	andi $t1,$a1,0x80000000
 	srl $t1,$t1,31
+	and $t7,$t0,$t1
 	#Comparing Signs
-	bgt $t0,$t1,Greater
-	blt $t0,$t1,Lesser
+	bgt $t0,$t1,Lesser
+	blt $t0,$t1,Greater
 	#Signs Are Equal, so Get Exponents
 	andi $t0,$a0,0x7F800000
 	srl $t0,$t0,23
@@ -153,10 +146,14 @@ CompareFloats:
 	andi $t0,$a0,0x007FFFFF
 	andi $t1,$a1,0x007FFFFF
 	#Comparing
+	bnez $t7,NegNeg
 	bgt $t0,$t1,Greater
 	blt $t0,$t1,Lesser
 	li $v0,0
 	b RestoreRegisters2
+	NegNeg:
+		bgt $t0,$t1,Lesser
+		blt $t0,$t1,Greater
 	Greater:
 		li $v0,1
 		b RestoreRegisters2
@@ -339,27 +336,47 @@ ShiftB:					#Shifting B b/c A's exponent is greater
 Equal:
 	#Step 2 Add Mantissa of A & B
 	bne $t4,$t5,PosNeg
+	srl $t4,$t4,31
 	add $t7,$t2,$t3
 	b Alignment
 	PosNeg:
-	#Substep of Checking if Neg is Bigger
-	bnez $t5,checkSizeofNeg		#B is the Negative
-	#Else Swap Matnissas of A & B and Signs
-	move $t6,$t0
-	move $t0,$t1
-	move $t1,$t6
-	move $t6,$t2
-	move $t2,$t3
-	move $t3,$t6
-	checkSizeofNeg:
-	bgt $t2,$t3,Subtract
-	li $t4,0x80000000			#Negative is bigger so Sign is Negative
+	beqz $t4,BNeg
+	xor $t2,$t2,$t3
+	xor $t3,$t2,$t3			#Swap Mantissa
+	xor $t2,$t2,$t3
+	
+	xor $t4,$t4,$t5
+	xor $t5,$t4,$t5			#Swap Mantissa
+	xor $t4,$t4,$t5
+	BNeg:
+		#Check if neg bigger
+		bnez $t4,BothNeg
+		bgt $t2,$t3,Subtract
+		xor $t2,$t2,$t3
+		xor $t3,$t2,$t3			#Swap Mantissa
+		xor $t2,$t2,$t3
+		li $t4,0x1			#Make Sign Negative
+		li $t5,0x1
+	BothNeg:
+		li $t4,0x1			#Make Sign Negative
+		li $t5,0x1
+		li $v0,35
+	la $a0,($t2)
+	syscall
+	li $v0,4
+	la $a0,PNL
+	syscall
+	li $v0,35
+	la $a0,($t3)
+	syscall
+		add $t7,$t2,$t3
+		b Alignment
 	Subtract:
 	sub $t7,$t2,$t3			#Subtracting Mantissa
 	#Step 3 Normalize
 	Alignment:				#Alignement Substep
 	li $t6,0x00				#Clearing $t6
-	andi $t6,$t7,0xFF800000		#Checking if 00.yyyy
+	andi $t6,$t7,0x7FFC000		#Checking if 00.yyyy
 	beqz $t6,FractShift
 	andi $t6,$t7,0x1000000		
 	beqz $t6, Shift			#Branch if not 10.yyyy
@@ -453,15 +470,12 @@ srl $t0,$t0,23
 andi $t1,$a1,0x7F800000
 srl $t1,$t1,23
 add $t0,$t0,$t1
-subi $t0,$t0,127
-sll $t0,$t0,23
-
+subi $t0,$t0,127			#Subtracting Bias From Exponent Product
 
 andi $t2,$a0,0x80000000
 andi $t3,$a1,0x80000000
-add $t1,$t2,$t3
-add $t0,$t0,$t1
-move $v0,$t0
+xor $t1,$t2,$t3
+srl $t1,$t1,31			#Shifting Sign in 1's Place for Normalization
 
 andi $t2,$a0,0x7FFFFF
 addi $t2,$t2,0x800000
@@ -470,19 +484,31 @@ addi $t3,$t3,0x800000
 mult $t2,$t3
 mfhi $t2				#Stores lower 32 bits of mantissa in $t2
 mflo $t3				#Stores upper 32 bits of mantissa in $t2
-
+andi $t4,$t2,0xFF8000
+bnez $t4,BigAlign
+beq $t4,1,Combo
 #Shifting Mantissa into Normalization Format
-sll $t2,$t2,8	
-andi $t4,$t3,0xFF000000
-srl $t4,$t4,24
+b Combo
+BigAlign:				#Aligning for 10.yyyy
+andi $t4,$t2,0x1
+srl $t2,$t2,1	
+srl $t3,$t3,1
+sll $t4,$t4,31
+add $t3,$t3,$t4
+andi $t5,$t2,0xFFFF4000
+addi $t0,$t0,1
+beqz $t5,BigAlign
+	
+Combo:
+#add $t0,$t2,$t0			#Combining Mantissa and Exp and Sign
 
-add $t2,$t2,$t4			#Combining 23bits of Mantissa
+move $a0,$t1
+move $a1,$t2
+move $a2,$t3
+move $a3,$t0
 
-add $t0,$t2,$t0			#Combining Mantissa and Exp and Sign
-move $v0,$t0
-
-
-
+jal NormalizeFloat
+move $t7,$v0
 #-----Restoring Registers-----#
 		lw $a0,0($sp)
 		lw $a1,4($sp)
