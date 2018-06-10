@@ -214,7 +214,7 @@ li $t7,0
 	move $t1, $a1
 	move $t2, $a2
 	move $t3, $a3
-	
+
 	li $t7,17					#Counter For Decimal Point Shifts
 	ShiftA1:
 		sll $t1,$t1,1			
@@ -230,7 +230,7 @@ li $t7,0
 	srlv $t2,$t2,$t7				#Aligns $a2
 	
 	or $t1,$t1,$t2				#combines $a1 & $a2
-	
+
 	sll $t1,$t1,1				#Shift the 1's place out of Mantissa
 	srl $t1,$t1,9				#Aligns $t1 (Mantissa)
 	
@@ -361,14 +361,6 @@ Equal:
 		li $t4,0x1			#Make Sign Negative
 		li $t5,0x1
 		li $v0,35
-	la $a0,($t2)
-	syscall
-	li $v0,4
-	la $a0,PNL
-	syscall
-	li $v0,35
-	la $a0,($t3)
-	syscall
 		add $t7,$t2,$t3
 		b Alignment
 	Subtract:
@@ -403,7 +395,6 @@ Equal:
 	move $a3,$t0
 	jal NormalizeFloat
 	move $t7,$v0
-
 #-----Restoring Registers-----#
 	RestoreRegisters4:
 		lw $a0,0($sp)
